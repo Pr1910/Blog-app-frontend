@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import Editor from "../components/Editor";
+import Filter from "bad-words";
+import toast, { Toaster } from "react-hot-toast";
 
 const EditPost = () => {
   const { id } = useParams();
@@ -9,6 +11,7 @@ const EditPost = () => {
   const [content, setContent] = useState("");
   const [files, setFiles] = useState("");
   const [redirect, setRedirect] = useState(false);
+  const filter = new Filter();
 
   useEffect(() => {
     fetch("http://localhost:4000/post/" + id).then((response) => {
@@ -21,28 +24,38 @@ const EditPost = () => {
   }, []);
 
   async function updatePost(ev) {
-    ev.preventDefault();
     const data = new FormData();
+
     data.set("title", title);
     data.set("summary", summary);
     data.set("content", content);
     data.set("id", id);
-    if(files?.[0]){
-        data.set("file", files?.[0]);
+    ev.preventDefault();
+
+    if (
+      filter.isProfane(title) ||
+      filter.isProfane(summary) ||
+      filter.isProfane(content)
+    ) {
+      toast.error(
+        "Your post contrains inappropriate language. Please remove it and try again."
+      );
+      return;
+    }
+    if (files?.[0]) {
+      data.set("file", files?.[0]);
     }
     const response = await fetch("http://localhost:4000/post", {
-        method: 'PUT',
-        body: data,
-        credentials: 'include',
-
+      method: "PUT",
+      body: data,
+      credentials: "include",
     });
-    
-    if(response.ok)
-        setRedirect(true);
+
+    if (response.ok) setRedirect(true);
   }
 
   if (redirect) {
-    return <Navigate to={'/post/'+id} />;
+    return <Navigate to={"/post/" + id} />;
   }
 
   return (
@@ -65,6 +78,7 @@ const EditPost = () => {
       <Editor onChange={setContent} value={content} />
 
       <button style={{ marginTop: "5px" }}>Update Post</button>
+      <Toaster />
     </form>
   );
 };

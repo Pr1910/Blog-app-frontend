@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { Navigate } from "react-router-dom";
 import Editor from "../components/Editor";
-
+import Filter from "bad-words";
+import toast, { Toaster } from "react-hot-toast";
 
 const CreatePost = () => {
   const [title, setTitle] = useState("");
@@ -11,6 +11,7 @@ const CreatePost = () => {
   const [content, setContent] = useState("");
   const [files, setFiles] = useState("");
   const [redirect, setRedirect] = useState(false);
+  const filter = new Filter();
 
   async function createNewPost(ev) {
     const data = new FormData();
@@ -18,12 +19,22 @@ const CreatePost = () => {
     data.set("summary", summary);
     data.set("content", content);
     data.set("file", files[0]);
-
     ev.preventDefault();
+
+    if (
+      filter.isProfane(title) ||
+      filter.isProfane(summary) ||
+      filter.isProfane(content)
+    ) {
+      toast.error("Your post contrains inappropriate language. Please remove it and try again.");
+      return;
+    }
+
+    
     const response = await fetch("http://localhost:4000/post", {
       method: "POST",
       body: data,
-      credentials: 'include'
+      credentials: "include",
     });
 
     if (response.ok) {
@@ -53,8 +64,10 @@ const CreatePost = () => {
 
       <input type="file" onChange={(ev) => setFiles(ev.target.files)} />
 
-      <Editor value={content} onChange={setContent}/>
+      <Editor value={content} onChange={setContent} />
       <button style={{ marginTop: "5px" }}>Create Post</button>
+      {/* <Toaster  toastOptions={{duration: Infinity}}/> */}
+      <Toaster />
     </form>
   );
 };
